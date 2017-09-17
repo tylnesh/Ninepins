@@ -26,6 +26,7 @@
 
 
 #define NUMPIXELS      28
+int resendCounter = 0;
 
 int lastPins = 0;
 int lastRounds = 0;
@@ -371,8 +372,27 @@ default: break;}
 
 
 
+void sndError() {
+  analogWrite(TXControl,255); //Tramsmitting
+Serial1.println(3);
 
-void rcvMsg(){
+
+Serial1.print(6);
+
+for (int i = 0; i<9; i++) {Serial1.print(0);} 
+
+Serial1.print(0);
+
+int checksum = 0;
+checksum = 3;
+
+delay(100);
+analogWrite(TXControl,0); //Receiving
+
+  }
+
+
+/*void rcvMsg(){
 analogWrite(TXControl,0);
 int blbost;
 while (Serial1.available()) {
@@ -389,7 +409,26 @@ while (Serial1.available()) {
     }
   delay(100);
 }
-  }
+  }*/
+
+  void rcvMsg() {
+    analogWrite(TXControl,0);
+    int msg[5];
+    while (Serial1.available()) {
+      for (int i =0; i<5; i++) msg[i] = Serial1.read();
+      int checksum = msg[0]+msg[1]+msg[2]+msg[3];
+      if (msg[0] == 3) 
+      { if (checksum == msg[4]) 
+      {
+        incoming.rounds = msg[1];
+        incoming.pins = msg[2];
+        incoming.score = msg[3];
+        delay(100);
+        }
+        } else sndError(); 
+        
+      }
+    }
 
 
 

@@ -251,3 +251,9 @@ void ChangerWindow::RedrawGUI()
 
 
 }
+
+void ChangerWindow::on_zeroButton_clicked()
+{
+    points = score = rounds =0;
+    RedrawGUI();
+}

@@ -41,6 +41,7 @@ This program is free software: you can redistribute it and/or modify
 
 
 #define WIRE 1
+#define WIRE2 3
 
 struct ardMsg
 {
@@ -69,7 +70,7 @@ PartialGameWindow::PartialGameWindow(QWidget *parent) :
 //        gpio21->setdir_gpio("in");
     isPartial = true;
     pointsGF = 0;
-    scoreGF = 0;
+    //scoreGF = 0;
     roundsGF = 0;
     ardListening = true;
 
@@ -109,6 +110,9 @@ if (serial->open(QIODevice::ReadWrite))
 cmdOutGF = 25;
 sndMsg();
 
+//QEventLoop loop;
+//QTimer::singleShot(200, &loop, SLOT(quit())); loop.exec();
+sndScore();
 
 }
 
@@ -185,47 +189,47 @@ void PartialGameWindow::onRedrawGUI()
 
 void PartialGameWindow::on_pin1_clicked()
 {
- //  if (pinsGF[0]) pinsGF[0] = false; else pinsGF[0] = true;
+ sndScore(); //  if (pinsGF[0]) pinsGF[0] = false; else pinsGF[0] = true;
 }
 
 void PartialGameWindow::on_pin2_clicked()
 {
-  // if (pinsGF[1]) pinsGF[1] = false; else pinsGF[1] = true;
+  sndScore(); // if (pinsGF[1]) pinsGF[1] = false; else pinsGF[1] = true;
 }
 
 void PartialGameWindow::on_pin3_clicked()
 {
-  // if (pinsGF[2]) pinsGF[2] = false; else pinsGF[2] = true;
+  sndScore(); // if (pinsGF[2]) pinsGF[2] = false; else pinsGF[2] = true;
 }
 
 void PartialGameWindow::on_pin4_clicked()
 {
-  //  if (pinsGF[3]) pinsGF[3] = false; else pinsGF[3] = true;
+  sndScore(); //  if (pinsGF[3]) pinsGF[3] = false; else pinsGF[3] = true;
 }
 
 void PartialGameWindow::on_pin5_clicked()
 {
-   // if (pinsGF[4]) pinsGF[4] = false; else pinsGF[4] = true;
+   sndScore();// if (pinsGF[4]) pinsGF[4] = false; else pinsGF[4] = true;
 }
 
 void PartialGameWindow::on_pin6_clicked()
 {
-  //  if (pinsGF[5]) pinsGF[5] = false; else pinsGF[5] = true;
+  sndScore(); //  if (pinsGF[5]) pinsGF[5] = false; else pinsGF[5] = true;
 }
 
 void PartialGameWindow::on_pin7_clicked()
 {
-   // if (pinsGF[6]) pinsGF[6] = false; else pinsGF[6] = true;
+   sndScore(); // if (pinsGF[6]) pinsGF[6] = false; else pinsGF[6] = true;
 }
 
 void PartialGameWindow::on_pin8_clicked()
 {
-   // if (pinsGF[7]) pinsGF[7] = false; else pinsGF[7] = true;
+   sndScore(); // if (pinsGF[7]) pinsGF[7] = false; else pinsGF[7] = true;
 }
 
 void PartialGameWindow::on_pin9_clicked()
 {
- //  if (pinsGF[8]) pinsGF[8] = false; else pinsGF[8] = true;
+ sndScore(); //  if (pinsGF[8]) pinsGF[8] = false; else pinsGF[8] = true;
 }
 
 void PartialGameWindow::on_stavanieButton_clicked()
@@ -257,8 +261,9 @@ void PartialGameWindow::on_stavButton_clicked()
      for (int i = 0; i<9; i++) P_outgoing.pins[i] = pinsOutGF[i];
 
      sndMsg();
-     sndScore();
+
      onRedrawGUI();
+     sndScore();
  }
 
 }
@@ -334,11 +339,15 @@ void PartialGameWindow::handleTimeout()
 
         qDebug() << "Incoming checksum is: " << inChecksum;
 
-        if (checksum != inChecksum) cmdOutGF = 6; sndMsg();
+        if (checksum != inChecksum) { cmdOutGF = 6; sndMsg(); cmdOutGF = 1; }
 
-        if (P_incoming.cmd == 2) { parseMsg(); sndScore();}
-        else if (P_incoming.cmd == 3 || P_incoming.cmd == 30  ) ardListening = true;
-        else if (P_incoming.cmd == 4 || P_incoming.cmd == 40 ) ardListening = false;
+
+        if (P_incoming.wire == WIRE && P_incoming.cmd == 2) {
+            qDebug() << " Received score from DUE, sending score to UNO";
+            parseMsg();  sndScore(); }
+        if (P_incoming.wire == WIRE2 && P_incoming.cmd == 6) {sndScore();}
+        //else if (P_incoming.cmd == 3 || P_incoming.cmd == 30  ) ardListening = true;
+        //else if (P_incoming.cmd == 4 || P_incoming.cmd == 40 ) ardListening = false;
 
         //qDebug() << m_readData.toHex();
         m_readData = "";
@@ -435,6 +444,11 @@ void PartialGameWindow::parseMsg(){
 
 
 void PartialGameWindow::sndMsg(){
+
+    QEventLoop loop;
+    QTimer::singleShot(50, &loop, SLOT(quit()));
+    loop.exec();
+
     P_outgoing.wire = WIRE;
     P_outgoing.cmd = cmdOutGF;
     if (cmdOutGF == 3) cmdOutGF = 2;
@@ -450,19 +464,30 @@ void PartialGameWindow::sndMsg(){
     serial->write(w); serial->write(c);
     for (int i = 0; i<9; i++) serial->write(p[i]);
     serial->write(r);
+    //loop.exec();
 
+    for (int i = 0; i<9; i++) qDebug() << P_outgoing.pins[i];
 }
 
 
 void PartialGameWindow::sndScore(){
 
-    QByteArray w,r,p,s;
+
+    QEventLoop loop;
+    QTimer::singleShot(200, &loop, SLOT(quit()));
+    loop.exec();
+
+    QByteArray w,r,p,s,c;
 
 
     w.append(3);  r.append(roundsGF);  p.append(pointsGF); s.append(scoreGF);
-
+    c.append(3+roundsGF+pointsGF+scoreGF);
 
     serial->write(w); serial->write(r); serial->write(p); serial->write(s);
+    serial->write(c);
+    qDebug() << "Sending to LEDs" << w << endl << r << p << endl << s << endl << c;
+
+    //loop.exec();
 
 }
 

@@ -477,6 +477,24 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QPushButton" name="zeroButton">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>10</y>
+     <width>211</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>22</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Vynuluj</string>
+   </property>
+  </widget>
  </widget>
  <resources>
   <include location="ninepins.qrc"/>

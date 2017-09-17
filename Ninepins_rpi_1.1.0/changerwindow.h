@@ -49,6 +49,8 @@ private slots:
     void on_pin9_clicked();
 
 
+    void on_zeroButton_clicked();
+
 private:
     Ui::ChangerWindow *ui;
 

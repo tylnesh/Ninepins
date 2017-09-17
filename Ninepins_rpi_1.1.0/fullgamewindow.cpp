@@ -38,7 +38,7 @@ This program is free software: you can redistribute it and/or modify
 #include <ctime>
 
 #define WIRE 1
-
+#define WIRE2 3
 
 
 struct ardMsg
@@ -106,10 +106,15 @@ if (serial->open(QIODevice::ReadWrite))
 
         m_timer.start(2000);
 
+
 } else qDebug("False");
+
 
 cmdOutGF = 24;
 sndMsg();
+
+//QEventLoop loop;
+//QTimer::singleShot(200, &loop, SLOT(quit())); loop.exec();
 sndScore();
 
 }
@@ -255,6 +260,10 @@ void FullGameWindow::on_stavButton_clicked()
      for (int i = 0; i<9; i++) pinsGF[i] = pinsOutGF[i];
      sndMsg();
      onRedrawGUI();
+
+     QEventLoop loop;
+     QTimer::singleShot(50, &loop, SLOT(quit()));
+     loop.exec();
      sndScore();
  }
 
@@ -268,7 +277,7 @@ void FullGameWindow::on_koniecButton_clicked()
 
     buttonThread->Stop = true;
 
-    currentRound = pointsGF = scoreGF = roundsGF = cmdGF = 0;
+    currentRound = pointsGF = roundsGF = cmdGF = 0;
 
     for (int i = 0; i<9; i++) pinsGF[i] = 0;
 
@@ -331,9 +340,11 @@ void FullGameWindow::handleTimeout()
 
         qDebug() << "Incoming checksum is: " << inChecksum;
 
-        if (checksum != inChecksum) cmdOutGF = 6; sndMsg();
+        if (checksum != inChecksum) { cmdOutGF = 6; sndMsg(); cmdOutGF = 1; }
 
-        if (F_incoming.cmd == 1) { parseMsg(); sndScore();}
+        if (F_incoming.wire == WIRE && F_incoming.cmd == 1) { parseMsg(); sndScore();}
+        if (F_incoming.wire == WIRE2 && F_incoming.cmd == 6) {sndScore();}
+
         //else if (F_incoming.cmd == 3 || F_incoming.cmd == 30  ) ardListening = true;
         //else if (F_incoming.cmd == 4 || F_incoming.cmd == 40 ) ardListening = false;
 
@@ -404,7 +415,8 @@ void FullGameWindow::parseMsg(){
 
                  else {
                      pointsGF = 0;
-                     for (int i = 0; i<9; i++) { pinsGF[i] = F_incoming.pins[i]; if (pinsGF[i]) pointsGF++;}
+                     for (int i = 0; i<9; i++) {
+                         pinsGF[i] = F_incoming.pins[i]; if (pinsGF[i]) pointsGF++;}
                      roundsGF = currentRound;
 
                      if (pointsGF == 9)
@@ -439,6 +451,12 @@ void FullGameWindow::parseMsg(){
 
 
 void FullGameWindow::sndMsg(){
+
+    //QEventLoop loop;
+    //QTimer::singleShot(50, &loop, SLOT(quit()));
+   // loop.exec();
+
+
     F_outgoing.wire = WIRE;
     F_outgoing.cmd = cmdOutGF;
     if (cmdOutGF == 3) cmdOutGF = 1;
@@ -454,20 +472,27 @@ void FullGameWindow::sndMsg(){
     serial->write(w); serial->write(c);
     for (int i = 0; i<9; i++) serial->write(p[i]);
     serial->write(r);
-
+//loop.exec();
 }
 
 
 void FullGameWindow::sndScore(){
 
-    QByteArray w,r,p,s;
+
+    QEventLoop loop;
+    QTimer::singleShot(50, &loop, SLOT(quit()));
+    loop.exec();
+
+    QByteArray w,r,p,s,c;
 
 
     w.append(3);  r.append(roundsGF);  p.append(pointsGF); s.append(scoreGF);
-
+    c.append(3+roundsGF+pointsGF+scoreGF);
 
     serial->write(w); serial->write(r); serial->write(p); serial->write(s);
+    serial->write(c);
 
+   //loop.exec();
 }
 
 
